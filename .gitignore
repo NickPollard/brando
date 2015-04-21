@@ -1,0 +1,9 @@
+# vim
+*.swp
+*.un~
+
+# compiled
+*.o
+*.so
+*.a
+*.d
