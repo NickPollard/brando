@@ -1,2 +1,5 @@
 SRCS =	src/list.cpp \
-				src/future.cpp
+				src/future.cpp \
+				src/main.cpp \
+				src/range.cpp \
+				src/task.cpp

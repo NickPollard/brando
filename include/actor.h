@@ -1,8 +1,9 @@
 // actor.h
-#define type typename
-#define var auto
-#define val const auto
-#define exec(LAMBDA) ([]{ return LAMBDA })
+#include <prelude.h>
+//#define type typename
+//#define var auto
+//#define val const auto
+//#define exec(LAMBDA) ([]{ return LAMBDA })
 
 static const maxIterations = 1024;
 
