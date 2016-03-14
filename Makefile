@@ -8,7 +8,8 @@ OBJS = $(SRCS:src/%.cpp=bin/%.o)
 all : brando
 
 brando : $(SRCS) $(OBJS)
-	$(C) $(LFLAGS) -o $(EXECUTABLE) $(OBJS)
+	@echo "--linking--"
+	@$(C) $(LFLAGS) -o $(EXECUTABLE) $(OBJS)
 
 bin/%.o : src/%.cpp
-	$(C) $(CFLAGS) -c -o $@ $<
+	@$(C) -shared $(CFLAGS) -c -o $@ $<

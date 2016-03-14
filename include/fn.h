@@ -9,8 +9,8 @@
 	 */
 template<typename A, typename B> 
 	struct Fn {
-		virtual auto apply(A a) -> B = 0;
-		virtual auto operator ()(A a) -> B = 0;
+		virtual auto apply(A a) -> B const = 0;
+		virtual auto operator ()(A a) -> B const = 0;
 	};
 
 template<typename A, typename B> 
@@ -18,8 +18,8 @@ template<typename A, typename B>
 		private:
 			std::function<B(A)> inner;
 		public:
-			virtual auto apply(A a) -> B { return inner(a); };
-			virtual auto operator ()(A a) -> B { return inner(a); };
+			virtual auto apply(A a) -> B const { return inner(a); };
+			virtual auto operator ()(A a) -> B const { return inner(a); };
 
 			FunctionFn(std::function<B(A)> f) : inner(f) {}
 	};

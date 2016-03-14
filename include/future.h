@@ -18,6 +18,8 @@ using std::function;
 using std::atomic;
 using std::mutex;
 
+template<typename T> struct Promise;
+template<typename T> struct Future;
 
 /*
 	 Data struct for Future internals that can be swapped out with a single CAS
@@ -48,6 +50,8 @@ template<typename T> struct Future {
 		*/
 
 	template<typename B> void foreach( function<B(T)> f ) { 
+		promise.foreach(f);
+		/*
 		FutureData<T>*& previous = data.load(); // Strongly-ordered atomic memory-load
 		FutureData<T>* replaceWith = nullptr;
 		do {
@@ -62,13 +66,15 @@ template<typename T> struct Future {
 		} while (!data.compare_exchange_strong(previous, replaceWith));
 		// We succesfully exchanged so we now own the old one
 		delete previous;
+		*/
 	};
 
 	template<typename B> void 
 		andThen( function<B(T)> f ) { foreach(f); };
 
 	// Is the future complete yet?
-	auto isComplete() -> bool { return data.load().value.load() != nullptr; }
+	//auto isComplete() -> bool { return data.load().value.load() != nullptr; }
+	auto isComplete() -> bool { return promise.isComplete(); }
 
 	private:
 	/*
@@ -76,7 +82,8 @@ template<typename T> struct Future {
 		list<handler> handlers;
 		mutex m;
 		*/
-		atomic<FutureData<T>*> data;
+		//atomic<FutureData<T>*> data;
+		Promise<T>* promise;
 };
 
 /*
@@ -91,13 +98,13 @@ template<typename T> struct Promise {
 	//PromiseFuture<T> future;
 
 	// Try to complete the future with the given value, return whether successful
-			/*
+	/*
 	auto completeWith( const T& t ) -> bool {
 		lock_guard(m);
 		value = t; // set the value in the mutex
 		handlers.foreach(run)
 	}
-		*/
+	*/
 
 	/*
 	static completed(T t) -> unique_ptr<Promise<T>> {
@@ -110,7 +117,29 @@ template<typename T> struct Promise {
 	Promise() : m() {
 	}
 
+	auto complete(T t) -> void {(void)t;}
+
+	auto future() -> Future<T> { return Future<T>(); }
+
+	template<typename B> void foreach( function<B(T)> f ) { 
+		FutureData<T>*& previous = data.load(); // Strongly-ordered atomic memory-load
+		FutureData<T>* replaceWith = nullptr;
+		do {
+			if (previous.value != nullptr) { // it's been completed whilst we were waiting
+				f(previous.value);
+				if (replaceWith) delete replaceWith;
+				return;
+			}	
+			auto hs = previous.handlers.cons(f);
+			if (!replaceWith) replaceWith = new FutureData<T>( hs, previous.value );
+			else              replaceWith.set( hs, previous.value );
+		} while (!data.compare_exchange_strong(previous, replaceWith));
+		// We succesfully exchanged so we now own the old one
+		delete previous;
+	}
+
 	private:
 		mutex m;
+		atomic<FutureData<T>*> data;
 };
 
