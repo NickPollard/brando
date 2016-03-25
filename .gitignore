@@ -7,3 +7,6 @@
 *.so
 *.a
 *.d
+
+# package
+target
