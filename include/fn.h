@@ -9,8 +9,11 @@ using std::make_shared;
 
 namespace brando {
 	// *** Forward declaration
-	template <typename A, typename B> struct Fn;
-	template <typename A, typename B> auto fn(std::function<B(A)> f) -> Fn<A,B>;
+		template <typename A, typename B> struct Fn;
+		template <typename B> struct Fn0;
+		template <typename A, typename B> auto fn(std::function<B(A)> f) -> Fn<A,B>;
+		template <typename B> auto fn0(std::function<B()> f) -> Fn0<B>;
+	// ***
 
 	/*
 	 	Fn<A,B> - an opinionated function type from A -> B
@@ -44,7 +47,6 @@ namespace brando {
 				};
 			
 				Fn(std::function<B(A)> f) : inner(make_shared<std::function<B(A)>>(f)) {}
-	
 		};
 	
 	/*
@@ -66,8 +68,34 @@ namespace brando {
 	template <typename A, typename B, typename F>
   	auto fn(F f) -> Fn<A,B> { return Fn<A,B>(std::function<B(A)>(f)); };
 	
+	/*
 	template<typename A, typename B, typename C>
 		auto andThen(Fn<A,B> f, Fn<B,C> g) -> Fn<A,C> {
 			return fn(std::function<C(A)>([f,g](A a) { return g(f(a)); }));
 		};
+		*/
+
+	template<typename B> 
+		struct Fn0 {
+			private:
+				shared_ptr<std::function<B()>> inner;
+			public:
+				B apply() const { return (*inner)(); };
+				B operator ()() const { return (*inner)(); };
+	
+				template<typename C>
+					auto andThen(Fn<B,C> g) -> Fn0<C> {
+						auto f = *this;
+						return fn0(std::function<C()>([f,g]() { return g(f()); }));
+				};
+
+				Fn0(std::function<B()> f) : inner(make_shared<std::function<B()>>(f)) {}
+		};
+
+	template <typename B>
+  	auto fn0(std::function<B()> f) -> Fn0<B> { return Fn0<B>(f); };
+	
+	template <typename B, typename F>
+  	auto fn0(F f) -> Fn0<B> { return Fn0<B>(std::function<B()>(f)); };
 };
+

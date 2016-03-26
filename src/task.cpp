@@ -3,20 +3,20 @@
 #include <iostream>
 
 //#define delay(BODY) FunctionFn<bool,int>(std::function<int(bool)>([](bool b){ (void)b; BODY; }))
-#define delay(BODY) fn(std::function<int(bool)>([](bool b){ (void)b; BODY; }))
-#define _delay(BODY) Task<int>(fn(std::function<int(bool)>([](bool b){ (void)b; BODY; })))
+#define delay(BODY) fn0(std::function<int()>([](){ BODY; }))
+#define _delay(BODY) Task<int>(fn0(std::function<int()>([](){ BODY; })))
 
 using brando::Task;
 using brando::Fn;
 using brando::fn;
+using brando::Fn0;
+using brando::fn0;
 
 void testTask() {
-	//auto fn = FunctionFn<bool,int>(std::function<int(bool)>([](bool b){ (void)b; return 1; }));
 
 	//auto lambda = [](bool b){ (void)b; return 0; };
 	//auto fn = std::function<void(void)>(lambda);
 
-	//Task<int> t = Task<int>(delay({ return 1; }));
 	auto t = _delay({ return 1; });
 	printf("Answer is %i.\n", t.run());
 

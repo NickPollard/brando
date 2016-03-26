@@ -10,5 +10,6 @@ namespace brando {
 			auto operator += (T t) -> void { enqueue(t); }
 			auto head() -> T { }
 			auto tail() -> Queue<T> { }
+			auto empty() -> bool { return false; /* TODO */ }
 		};
 };

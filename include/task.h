@@ -19,12 +19,12 @@ namespace brando {
 	template<typename T> 
 		class Task {
 			private:
-				Fn<bool, T> f;
+				Fn0<T> f;
 			public:
-				auto run() -> T { return f(true); };
+				auto run() -> T { return f(); };
 				auto runAsync(Executor& ex) -> Future<T>;
 
-				Task(Fn<bool, T> f_) : f(f_) {}
+				Task(Fn0<T> f_) : f(f_) {}
 
 				/*
 					 Task probably needs to be a free Monad that is interpreted as Id or Future when run
@@ -53,9 +53,14 @@ namespace brando {
 	class ThreadPoolExecutor : public Executor {
 		public:
 			virtual auto executeImpl(Job job) -> void { jobs += job; }
-			ThreadPoolExecutor(int threadCount) { foreach(threadCount)(fn<bool,void>([this](bool b){ (void)b; this->startThread(); })); }
+			ThreadPoolExecutor(int threadCount) { foreach(threadCount)([this](){ this->startThread();}); }
 		private:
-			auto startThread() -> void {};
+			auto startThread() -> void {
+				while (true) if (!jobs.empty()) {
+					auto job = jobs.dequeue;
+					job();
+				}
+			};
 			Queue<Job> jobs;
 	};
 };
