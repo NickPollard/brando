@@ -7,7 +7,7 @@ include Makelist
 OBJS = $(SRCS:src/%.cpp=bin/%.o)
 TARGET = target
 
-all : shared
+all : shared static
 
 shared : $(SRCS) $(OBJS)
 	@echo "-- linking shared library --"

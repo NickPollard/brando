@@ -2,7 +2,6 @@
 #pragma once
 #include <functional>
 #include <memory>
-
 #include <prelude.h>
 
 using std::shared_ptr;
@@ -10,11 +9,8 @@ using std::make_shared;
 
 namespace brando {
 	// *** Forward declaration
-	template <typename A, typename B>
-		struct Fn;
-	template <typename A, typename B>
-  	auto fn(std::function<B(A)> f) -> Fn<A,B>;
-
+	template <typename A, typename B> struct Fn;
+	template <typename A, typename B> auto fn(std::function<B(A)> f) -> Fn<A,B>;
 
 	/*
 	 	Fn<A,B> - an opinionated function type from A -> B
@@ -66,6 +62,9 @@ namespace brando {
 	
 	template <typename A, typename B>
   	auto fn(std::function<B(A)> f) -> Fn<A,B> { return Fn<A,B>(f); };
+	
+	template <typename A, typename B, typename F>
+  	auto fn(F f) -> Fn<A,B> { return Fn<A,B>(std::function<B(A)>(f)); };
 	
 	template<typename A, typename B, typename C>
 		auto andThen(Fn<A,B> f, Fn<B,C> g) -> Fn<A,C> {

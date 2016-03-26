@@ -4,6 +4,12 @@
 #include <fn.h>
 
 namespace brando {
-	// TODO - should be Fn not FunctionFn
-	auto foreach(int n, FunctionFn<bool, void> f);
-}
+	struct ForeachBuilder {
+		int iterations;
+		ForeachBuilder(int n) : iterations(n) {}
+		template<typename T>
+			auto operator ()(Fn<bool, T> f) -> void { for (int i = iterations; i > 0; --i) f(true); }
+	};
+
+	auto foreach(int n) -> ForeachBuilder { return ForeachBuilder(n); }
+};

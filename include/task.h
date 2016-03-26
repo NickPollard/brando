@@ -2,6 +2,8 @@
 #pragma once
 #include <fn.h>
 #include <future.h>
+#include <queue.h>
+#include <range.h>
 #include <memory>
 
 using std::shared_ptr;
@@ -41,32 +43,20 @@ namespace brando {
 		template<typename T>
 			auto execute(Task<T> t) -> Future<T> {
 				auto p = new Promise<T>();
-				(void)t;
-				executeImpl(t.map(fn(std::function<void(T)>([p](T t){ p->complete(t); }))));
+				//executeImpl(t.map(fn(std::function<void(T)>([p](T t){ p->complete(t); }))));
+				executeImpl(t.map(fn<T,void>([p](T t){ p->complete(t); })));
 				return p->future();
 			}
 		virtual auto executeImpl(Job job) -> void = 0;
 	};
 
-	template<typename T>
-	 	struct Queue {
-			auto enqueue(T t) -> void { (void)t; }
-			auto operator += (T t) -> void { enqueue(t); }
-		};
-
 	class ThreadPoolExecutor : public Executor {
-		private: 
-			Queue<Job> jobs;
 		public:
 			virtual auto executeImpl(Job job) -> void { jobs += job; }
-
-		ThreadPoolExecutor(int threadCount) {
-			(void)threadCount;
-			// Start n threads
-			// foreach(threadCount)(startThread);
-		}
+			ThreadPoolExecutor(int threadCount) { foreach(threadCount)(fn<bool,void>([this](bool b){ (void)b; this->startThread(); })); }
 		private:
 			auto startThread() -> void {};
+			Queue<Job> jobs;
 	};
 };
 
