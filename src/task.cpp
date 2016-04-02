@@ -1,6 +1,7 @@
 // task.cpp
 #include <task.h>
 #include <iostream>
+#include "immutable/option.h"
 
 //#define delay(BODY) FunctionFn<bool,int>(std::function<int(bool)>([](bool b){ (void)b; BODY; }))
 #define delay(BODY) fn0(std::function<int()>([](){ BODY; }))
@@ -11,6 +12,7 @@ using brando::Fn;
 using brando::fn;
 using brando::Fn0;
 using brando::fn0;
+using brando::immutable::some;
 
 void testTask() {
 
@@ -25,4 +27,9 @@ void testTask() {
 	(void)futInt;
 
 	Fn<int,void> f = fn(std::function<void(int)>([](int i){ printf("%d", i); }));
+
+	// Option
+	auto o = some(13);
+	int i = o->getOrElse(0);
+	printf("%d\n", i);
 }

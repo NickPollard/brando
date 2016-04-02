@@ -55,8 +55,13 @@ namespace brando {
 		public:
 			virtual auto executeImpl(Job job) -> void { jobs += job; }
 			ThreadPoolExecutor(int threadCount) { foreach(threadCount)([this](){ this->startThread();}); }
+			~ThreadPoolExecutor() {
+				// Don't kill the executor until all threads have finished
+				//threads.foreach([](thread& t){ t.join(); });
+			}
 		private:
 			Queue<Job> jobs;
+			//list<thread> threads;
 
 			auto startThread() -> void {
 				auto thread = std::thread([this](){
