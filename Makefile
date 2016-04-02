@@ -1,6 +1,7 @@
 C = g++
 CFLAGS = -Wall -Wextra -Werror -std=c++14 -Iinclude
 LFLAGS =
+LIBS = -lpthread
 SHARED = libbrando.so
 STATIC = libbrando.a
 include Makelist
@@ -12,7 +13,7 @@ all : shared static
 shared : $(SRCS) $(OBJS)
 	@echo "-- linking shared library --"
 	@mkdir -p $(TARGET)/shared/bin
-	@$(C) $(LFLAGS) -o $(TARGET)/shared/bin/$(SHARED) $(OBJS)
+	@$(C) $(LFLAGS) -o $(TARGET)/shared/bin/$(SHARED) $(OBJS) $(LIBS)
 
 bin/%.o : src/%.cpp
 	@$(C) -shared $(CFLAGS) -c -o $@ $<

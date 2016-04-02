@@ -5,6 +5,7 @@
 #include <queue.h>
 #include <range.h>
 #include <memory>
+#include <thread>
 
 using std::shared_ptr;
 
@@ -55,13 +56,17 @@ namespace brando {
 			virtual auto executeImpl(Job job) -> void { jobs += job; }
 			ThreadPoolExecutor(int threadCount) { foreach(threadCount)([this](){ this->startThread();}); }
 		private:
-			auto startThread() -> void {
-				while (true) if (!jobs.empty()) {
-					auto job = jobs.dequeue;
-					job();
-				}
-			};
 			Queue<Job> jobs;
+
+			auto startThread() -> void {
+				auto thread = std::thread([this](){
+					auto jobs = this->jobs;
+					while (true) if (!jobs.empty()) {
+						auto job = jobs.head();
+						job.run();
+					}
+				});
+			}
 	};
 };
 
