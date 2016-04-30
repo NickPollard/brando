@@ -3,7 +3,7 @@
 #include <memory>
 
 /* 
-	 An immutable, refcounted,singly-linked list
+	 An immutable, refcounted, singly-linked list
 	 */
 
 using std::shared_ptr;

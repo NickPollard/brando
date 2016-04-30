@@ -13,8 +13,7 @@ using brando::fn;
 using brando::Fn0;
 using brando::fn0;
 using brando::immutable::some;
-using brando::immutable::someOpt;
-using brando::immutable::noneOpt;
+using brando::immutable::none;
 
 void testTask() {
 
@@ -29,14 +28,4 @@ void testTask() {
 	(void)futInt;
 
 	Fn<int,void> f = fn(std::function<void(int)>([](int i){ printf("%d", i); }));
-
-	// Option
-	auto o = some(13);
-	int i = o->getOrElse(0);
-	printf("%d\n", i);
-
-	// Opt
-	auto op = someOpt(13);
-	auto op2 = noneOpt<int>();
-	printf("%d %d\n", op.getOrElse(0), op2.getOrElse(0));
 }
