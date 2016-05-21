@@ -9,7 +9,7 @@ OBJS = $(SRCS:src/%.cpp=bin/%.o)
 TARGET = target
 
 TESTLIBS = -lpthread -lbrando
-TESTCFLAGS = -Wall -Wextra -Werror -std=c++14 -Iinclude -I$(TARGET)/static/include
+TESTCFLAGS = -Wall -Wextra -Werror -std=c++14 -Iinclude -I$(TARGET)/static/include -Itest
 TESTLFLAGS = -L$(TARGET)/static/lib
 
 all : shared static
