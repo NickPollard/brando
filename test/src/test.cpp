@@ -1,6 +1,9 @@
 // test.cpp
+#include "immutable/list.h"
 #include "immutable/option.h"
+#include "concurrent/future.h"
 #include <stdio.h>
+#include <iostream>
 
 // Create a main() for the catch test library
 #define CATCH_CONFIG_MAIN
@@ -8,8 +11,35 @@
 
 using brando::immutable::some;
 using brando::immutable::none;
+using brando::immutable::List;
+using brando::immutable::nil;
+using brando::concurrent::Future;
+using brando::concurrent::Promise;
 
 TEST_CASE( "Option functions", "[option]" ) {
-    REQUIRE( some(1).getOrElse(0) == 1 );
-    REQUIRE( none<int>().getOrElse(0) == 0 );
+  REQUIRE( some(1).getOrElse(0) == 1 );
+  REQUIRE( none<int>().getOrElse(0) == 0 );
+}
+
+/*
+TEST_CASE( "Futures", "[futures]" ) {
+		REQUIRE( Promise<int>::make().get() != nullptr );
+		REQUIRE( Promise<int>::make()->future().completed() == false );
+
+//	REQUIRE( Future<int>::now(2).completed() == true );
+//	REQUIRE( Future<int>::now(3).tryAwait() == some(3) );
+//	REQUIRE( Future<int>::now(3).map(std::function<int(int)>([](auto i){ return i + 1; })).tryAwait() == some(4) );
+}
+*/
+
+TEST_CASE( "Lists", "[lists]" ) {
+	REQUIRE( List<int>::empty().head().isEmpty() == true );
+	REQUIRE( nil<int>().head().isEmpty() == true );
+	REQUIRE( nil<int>().isEmpty() == true );
+	REQUIRE( (1 << nil<int>()).head().isEmpty() == false );
+	REQUIRE( (1 << nil<int>()).head() == some(1) );
+	REQUIRE( (1 << (2 << nil<int>())).head() == some(1) );
+	REQUIRE( (1 << (2 << nil<int>())).tail().head() == some(2) );
+	REQUIRE( (1 << nil<int>()).tail().tail().head().isEmpty() == true );
+	REQUIRE( (1 << nil<int>()).size() == 1 );
 }

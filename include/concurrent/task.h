@@ -44,7 +44,6 @@ namespace brando {
 		template<typename T>
 			auto execute(Task<T> t) -> Future<T> {
 				auto p = new Promise<T>();
-				//executeImpl(t.map(fn(std::function<void(T)>([p](T t){ p->complete(t); }))));
 				executeImpl(t.map(fn<T,void>([p](T t){ p->complete(t); })));
 				return p->future();
 			}

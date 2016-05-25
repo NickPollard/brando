@@ -6,6 +6,7 @@
 	 An immutable, refcounted, singly-linked list
 	 */
 
+/*
 using std::shared_ptr;
 
 template <typename T> struct List;
@@ -36,3 +37,9 @@ template <typename T> struct List {
 	public:
 		List(ListElem<T>* e) : elem(e) {}
 };
+
+namespace list {
+	template <typename T>
+		auto cons(T head, shared_ptr<List<T>> tail) { return List<T>::cons(head, tail); }
+}
+*/
