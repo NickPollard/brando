@@ -9,4 +9,6 @@
 *.d
 
 # package
+bin
+test/bin
 target
