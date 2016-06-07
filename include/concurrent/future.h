@@ -14,6 +14,7 @@
 
 #include "immutable/option.h"
 #include "immutable/list.h"
+#include "concurrent/time.h"
 
 using std::function;
 using std::atomic;
@@ -23,110 +24,124 @@ using std::unique_ptr;
 using std::make_unique;
 using std::move;
 using brando::immutable::Option;
+using brando::immutable::some;
 using brando::immutable::none;
 using brando::immutable::List;
+using brando::concurrent::Seconds;
 
 namespace brando {
 	namespace concurrent {
 
 		template<typename T> struct Promise;
-		template<typename T> struct Future;
-
-		/*
-			 Data struct for Future internals that can be swapped out with a single CAS
-			 */
-		template<typename T> class FutureData {
-			typedef function<void(T)> handler;
-			public:
-				explicit FutureData(shared_ptr<List<handler>> hs, unique_ptr<T>&& t) : handlers(hs), value(move(t)) {}
-
-				auto withValue(T t) -> FutureData<T>* {
-					return new FutureData(handlers, make_unique<T>(t)); 
-				}
-				auto addHandler(handler h) -> FutureData<T>* {
-					return new FutureData(h << handlers, value); // This cons here needs to be immtable/thread-safe
-				}
-
-				bool completed() { return value.get() != nullptr; }
-				T* get() { return value; }
-
-				/*
-				void set(shared_ptr<List<handler>> hs, T* t) {
-					handlers = hs;
-					value.store(t);
-				}
-				*/
-
-			private:
-				shared_ptr<List<handler>> handlers;
-				unique_ptr<T> value;
-		};
+		template<typename T> struct PromiseImpl;
 
 		/*
 			 Future<T> - a type that will, at some point, contain a value of type T, but may
 			 not at present. Futures can be used to implement concurrency, and can be used
 			 monadically to compose sequential asynchronous computations.
 
-			 Futures are, underneath, a shared_ptr<Promise<T>>, with the Promise<T> allowing
+			 Futures are, underneath, a shared_ptr<PromiseImpl<T>>, with the PromiseImpl<T> allowing
 			 the eventual T to be supplied
 			 */
 		template<typename T> struct Future {
 			template<typename U> auto map( function<U(T)> f ) -> Future<U> {
-				(void)f;
-				auto next = new Promise<U>;
-				//foreach{[a]{ next.completeWith(f(a)); }};
-				return next->future();
+				Promise<U> next = Promise<U>();
+				foreach([=](T t){ next.complete(f(t)); });
+				return next.future();
 			};
-//			template<typename u, typename f> auto map( f f ) -> future<u> {
-//				auto next = new promise<u>;
-//				//foreach{[a]{ next.completewith(f(a)); }};
-//				return next.future();
-//			};
 
-			explicit Future(Promise<T>* p) : promise(p) {}
+			/*
+			template<typename F> auto map( F f ) {
+				auto next = new Promise<decltype(f(T)>();
+				foreach([=](T t){ next.complete(f(t)); });
+				return next.future();
+			};
+			*/
+			
+			template<typename F> void foreach( F f ) { promise->foreach(function<void(T)>(f)); };
 
-			template<typename B> void foreach( function<B(T)> f ) { promise.foreach(f); };
+			template<typename U> void foreach( function<U(T)> f ) { promise->foreach(f); };
 
-			template<typename B> void andThen( function<B(T)> f ) { foreach(f); };
+			template<typename U> void andThen( function<U(T)> f ) { foreach(f); };
 
 			auto completed() -> bool { return promise->completed(); }
 
-			auto tryAwait() -> Option<T> { return none<T>(); }; // TODO
+			auto get() -> Option<T> { return promise->get(); }
 
-			// now() - Create an already completed future
+			auto await(int seconds, Seconds unit) -> Option<T> { (void)unit; (void)seconds; return promise->get(); }; // TODO
+
+			// Future::now() - Create an already completed future
 			static Future<T> now(T t) {
-				auto p = Promise<T>::make();
-				p->complete(t);
-				return p->future();
+				auto p = Promise<T>();
+				p.complete(t);
+				return p.future();
 			};
 
 			private:
+				// Only Promises can construct Futures
+				friend class Promise<T>;
+				explicit Future(const shared_ptr<PromiseImpl<T>>& p) : promise(p) {}
+
 			/*
-				 Future must hold a reference to the underlying promise in order to run its functions
-
-				 Since we don't want promise to be missing, this should be a shared_ptr<> ?
-				 That means promises hang around until no-one has one anymore
-				 Future is largely a wrapper around a shared_ptr<Promise<T>>
-
-				 How we do we get futures from the promise? I guess we always want to deal with shared_ptr<> to promises, so that
-				 it doesn't get revoked
-				 which is the future - if we have one future we can make more
+				 Future must hold a reference to the underlying PromiseImpl in order to run its functions.
+				 Since we don't want PromiseImpl to be missing, this is a shared_ptr<T>
+				 This ensures PromiseImpls hang around until no-one has one anymore
 				 */
-			shared_ptr<Promise<T>> promise;
+			shared_ptr<PromiseImpl<T>> promise;
+		};
+
+		template<typename T>
+			auto future(T t) -> Future<T> { return Future<T>::now(t); }
+
+		/*
+			 Promise<T> - passable (by value) handle to an underlying PromiseImpl, provides public Promise API
+			 */
+		template<typename T> struct Promise {
+			public:
+				auto future() const -> Future<T> { return Future<T>(promise); }
+				void complete(T t) const { promise->complete(t); }
+
+				Promise() : promise(make_shared<PromiseImpl<T>>()) {}
+			private:
+				shared_ptr<PromiseImpl<T>> promise;
 		};
 
 		/*
-			 Promise<T> - underlying interface to produce Future<T> values
+			 PromiseData<T> - struct for Promise internals that can be swapped out with a single CAS
 			 */
-		template<typename T> struct Promise {
-			static auto make() -> shared_ptr<Promise<T>> { return make_shared<Promise<T>>(); }
+		template<typename T> class PromiseData {
+			friend class PromiseImpl<T>;
+			typedef function<void(T)> handler;
 
-			bool completed() { return false; } // Strongly-ordered atomic memory-load
-//			bool completed() { return atomicData.load()->completed(); } // Strongly-ordered atomic memory-load
+			public:
+				bool completed() { return !value.isEmpty(); }
+				Option<T> get() { return value; }
+
+			private:
+				explicit PromiseData() : handlers(), value() {}
+
+				auto withValue(T t) -> PromiseData<T>* {
+					return new PromiseData(handlers, some(t)); 
+				}
+				auto withHandler(handler h) -> PromiseData<T>* {
+					return new PromiseData(h << handlers, value); // This cons here needs to be immtable/thread-safe
+				}
+				explicit PromiseData(List<handler> hs, Option<T> t) : handlers(hs), value(t) {}
+
+			private:
+				List<handler> handlers;
+				Option<T> value;
+		};
+
+		/*
+			 PromiseImpl<T> - underlying interface to produce Future<T> values
+			 */
+		template<typename T> struct PromiseImpl {
+			bool completed() { return atomicData.load()->completed(); } // Strongly-ordered atomic memory-load
 
 			// Try to complete the future with the given value, return whether successful
 			bool complete(T t) {
-				FutureData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
+				PromiseData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
 				// Keep attempting until we're successful or someone else completes it
 				while (!current->completed()) {
 					auto attempt = current->withValue(t);
@@ -142,13 +157,13 @@ namespace brando {
 			 	return false;
 			}
 
-			auto future() -> Future<T> { return Future<T>(this); }
+			auto get() -> Option<T> { return atomicData.load()->get(); }
 
-			template<typename B> void foreach( function<B(T)> f ) { 
-				FutureData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
-				FutureData<T>* attempt = nullptr;
+			template<typename U> void foreach( function<U(T)> f ) { 
+				PromiseData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
+				//PromiseData<T>* attempt = nullptr;
 				while (!current->completed()) {
-					auto attempt = current->addHandler(f);
+					auto attempt = current->withHandler(f);
 					if (atomicData.compare_exchange_strong(current, attempt)) {
 						// We succesfully exchanged so we now own the old one
 						delete current;
@@ -159,12 +174,14 @@ namespace brando {
 					current = atomicData.load(); // Strongly-ordered atomic memory-load
 				} 
 				// it was completed already, so just run
-				f(current->get());
+				current->get().foreach(f);
 			}
-			explicit Promise() {}
+
+			explicit PromiseImpl() : atomicData(new PromiseData<T>) {}
 
 			private:
-				atomic<FutureData<T>*> atomicData; // TODO does this need to be some kind of shared_ptr?
+				atomic<PromiseData<T>*> atomicData; // TODO does this need to be some kind of shared_ptr?
 		};
+
 	}
 }

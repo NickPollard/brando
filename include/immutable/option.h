@@ -21,17 +21,18 @@ namespace brando {
 				auto isEmpty() -> bool { return empty; };
 				auto nonEmpty() -> bool { return !empty; };
 				
-				//auto foreach()
+				template<typename U>
+					void foreach(function<U(T)> f ) { if (!empty) f(getT()); }
 				//auto map()
 				//auto flatMap()
 
 				template<typename U>
-				auto fold(function<U()> noneF, function<U(T)> someF) -> U {
-					if (empty)
-						return noneF();
-					else
-						return someF(getT());
-				}
+					auto fold(function<U()> noneF, function<U(T)> someF) -> U {
+						if (empty)
+							return noneF();
+						else
+							return someF(getT());
+					}
 				bool operator ==(Option<T> other) {
 					return (empty == other.isEmpty() && (empty || getT() == other.getT()));
 				}

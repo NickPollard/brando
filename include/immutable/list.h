@@ -35,6 +35,7 @@ namespace brando {
 			static List empty() { return List(new ListImpl<T>()); }
 			
 		public:
+			List() : inner(new ListImpl<T>()) {}
 			List(T head, List<T> tail): inner(new ListImpl<T>(head, tail)) {}
 		private: 
 			List(ListImpl<T>* ptr) : inner(ptr) {}
