@@ -5,6 +5,7 @@
 #include "concurrent/task.h"
 #include "concurrent/executor.h"
 #include "concurrent/time.h"
+#include "functional/monoid.h"
 #include <stdio.h>
 #include <iostream>
 
@@ -54,4 +55,11 @@ TEST_CASE( "Tasks", "[tasks]" ) {
 	auto ex = ThreadPoolExecutor(1);
 	REQUIRE( Task<int>([](){ return 42; }).run() == 42 );
 	REQUIRE( Task<int>([](){ return 42; }).runAsync(ex).await(2, seconds) == some(42) );
+}
+
+TEST_CASE( "Monoid", "[monoids]" ) {
+	REQUIRE( sum(nil<int>()) == 0 );
+	REQUIRE( sum(nil<double>()) == 0.0 );
+	REQUIRE( sum(1 << (2 << (3 << nil<int>()))) == 6 );
+	REQUIRE( sum(1.0 << (2.0 << (3.0 << nil<double>()))) == 6.0 );
 }
