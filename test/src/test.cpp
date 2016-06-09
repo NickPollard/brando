@@ -62,4 +62,6 @@ TEST_CASE( "Monoid", "[monoids]" ) {
 	REQUIRE( sum(nil<double>()) == 0.0 );
 	REQUIRE( sum(1 << (2 << (3 << nil<int>()))) == 6 );
 	REQUIRE( sum(1.0 << (2.0 << (3.0 << nil<double>()))) == 6.0 );
+	REQUIRE( $(none<int>()) == 0 );
+	REQUIRE( $(some(1)) == 1 );
 }

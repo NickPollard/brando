@@ -39,3 +39,5 @@ template<typename T>
 		return t;
 	};
 
+template<typename T>
+	auto $(Option<T> opt) -> T { return opt.getOrElse(Monoid<T>::zero()); };
