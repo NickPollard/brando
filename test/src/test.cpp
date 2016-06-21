@@ -6,8 +6,10 @@
 #include "concurrent/executor.h"
 #include "concurrent/time.h"
 #include "functional/monoid.h"
+
 #include <stdio.h>
 #include <iostream>
+#include <thread>
 
 // Create a main() for the catch test library
 #define CATCH_CONFIG_MAIN
@@ -45,16 +47,25 @@ TEST_CASE( "Futures", "[futures]" ) {
 	REQUIRE( Promise<int>().future().completed() == false );
 	REQUIRE( Promise<int>().future().get().isEmpty() == true );
 	REQUIRE( future(42).get() == some(42) );
-	REQUIRE( future(1).await(2, seconds) == some(1) );
+	REQUIRE( future(1).await(0, seconds) == some(1) );
 	auto inc = function<int(int)>([](int i){ return i + 1; });
-	REQUIRE( future(1).map(inc).await(2, seconds) == some(2) );
-	REQUIRE( future(1).map(inc).map(inc).map(inc).await(2, seconds) == some(4) );
+	REQUIRE( future(1).map(inc).await(0, seconds) == some(2) );
+	REQUIRE( future(1).map(inc).map(inc).map(inc).await(0, seconds) == some(4) );
 }
 
+ThreadPoolExecutor ex(4);
 TEST_CASE( "Tasks", "[tasks]" ) {
-	auto ex = ThreadPoolExecutor(1);
-	REQUIRE( Task<int>([](){ return 42; }).run() == 42 );
-	REQUIRE( Task<int>([](){ return 42; }).runAsync(ex).await(2, seconds) == some(42) );
+	auto printInt = function<void(int)>([](int i){ printf("Result is %d.\n", i); });
+	auto inc = function<int(int)>([](int i){ return i + 1; });
+	REQUIRE( Task<int>([]{ return 42; }).run() == 42 );
+	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).await(1, seconds) == some(42) );
+	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).map(inc).await(1, seconds) == some(43) );
+
+	Task<int>([]{ std::this_thread::sleep_for(std::chrono::seconds(1)); return 1; }).runAsync(ex).foreach(printInt);
+	Task<int>([]{ return 2; }).runAsync(ex).foreach(printInt);
+	Task<int>([]{  std::this_thread::sleep_for(std::chrono::seconds(2)); return 3; }).runAsync(ex).foreach(printInt);
+	Task<int>([]{ return 4; }).runAsync(ex).foreach(printInt);
+	std::this_thread::sleep_for(std::chrono::seconds(3));
 }
 
 TEST_CASE( "Monoid", "[monoids]" ) {

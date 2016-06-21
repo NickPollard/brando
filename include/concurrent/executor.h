@@ -1,6 +1,7 @@
 // executor.h
 #pragma once
 #include "concurrent/future.h"
+#include "concurrent/queue.h"
 #include "concurrent/task.h"
 #include "immutable/list.h"
 
@@ -20,7 +21,8 @@ namespace brando {
 			template<typename T>
 				auto execute(Task<T> t) -> Future<T> {
 					auto p = Promise<T>();
-					executeImpl(t.map(function<Unit(T)>([=](T t){ p.complete(t); return unit(); })));
+					auto job = t.map(function<Unit(T)>([=](T t){ p.complete(t); return unit(); }));
+					executeImpl(job);
 					return p.future();
 				}
 			virtual auto executeImpl(Job job) -> void = 0;
@@ -28,22 +30,27 @@ namespace brando {
 
 		class ThreadPoolExecutor : public Executor {
 			public:
-				virtual auto executeImpl(Job job) -> void { jobs = job << jobs; }
-				ThreadPoolExecutor(int threadCount) { foreach(threadCount)([&](){ startThread();}); }
+				virtual auto executeImpl(Job job) -> void { jobs.push(job);(void)job;}
+				ThreadPoolExecutor(int threadCount) { 
+					// memory barrier - ensure that concurrent queue is initialized?
+					foreach(threadCount)([&](){ startThread(); }); 
+				}
 				~ThreadPoolExecutor() {
 					// Don't kill the executor until all threads have finished
 					//threads.foreach([](thread& t){ t.join(); });
 				}
 			private:
-				List<Job> jobs;
+				ConcurrentQueue<Job> jobs;
 				//list<thread> threads;
 
 				auto startThread() -> void {
-					auto thread = new std::thread([&](){
-						auto jobs = this->jobs;
-						while (true) if (!jobs.isEmpty()) {
-							auto job = jobs.head();
-							job.foreach(function<void(Job)>([](auto t){ t.run(); }));
+					auto js = &jobs;
+					auto thread = new std::thread([js](){
+						while (true) {
+							if (!js->isEmpty()) {
+								auto job = js->pop(); // Concurrently pop a single entry from the queue
+								job.foreach(function<void(Job)>([](auto t){ t.run(); }));
+							}
 						}
 					});
 					(void)thread;

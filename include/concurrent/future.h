@@ -11,6 +11,7 @@
 #include <functional>
 #include <mutex>
 #include <atomic>
+#include <thread>
 
 #include "immutable/option.h"
 #include "immutable/list.h"
@@ -68,7 +69,7 @@ namespace brando {
 
 			auto get() -> Option<T> { return promise->get(); }
 
-			auto await(int seconds, Seconds unit) -> Option<T> { (void)unit; (void)seconds; return promise->get(); }; // TODO
+			auto await(int seconds, Seconds unit) -> Option<T> { (void)unit; std::this_thread::sleep_for(std::chrono::seconds(seconds)); return promise->get(); }; // TODO
 
 			// Future::now() - Create an already completed future
 			static Future<T> now(T t) {
@@ -148,6 +149,12 @@ namespace brando {
 					if (atomicData.compare_exchange_strong(current, attempt)) {
 						delete current;
 						// TODO - we've completed, so we need to run all the handlers
+						// TODO - for now run all the handlers on this thread?
+						auto l = attempt->handlers;
+						while (!l.isEmpty()) {
+							l.head().foreach([&](auto f){ f(t); });
+							l = l.tail();
+						}
 						return true;
 					} else {
 						delete attempt;
