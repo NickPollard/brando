@@ -59,11 +59,11 @@ namespace brando {
 			};
 			*/
 			
-			template<typename F> void foreach( F f ) { promise->foreach(function<void(T)>(f)); };
+			template<typename F> void foreach( F f ) const { promise->foreach(function<void(T)>(f)); };
 
-			template<typename U> void foreach( function<U(T)> f ) { promise->foreach(f); };
+			template<typename U> void foreach( function<U(T)> f ) const { promise->foreach(f); };
 
-			template<typename U> void andThen( function<U(T)> f ) { foreach(f); };
+			template<typename U> void andThen( function<U(T)> f ) const { foreach(f); };
 
 			auto completed() -> bool { return promise->completed(); }
 

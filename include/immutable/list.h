@@ -27,12 +27,30 @@ namespace brando {
 	template<typename T>
 	struct List {
 		public:
-			auto head() -> Option<T> { return inner->head(); }
-			auto tail() -> List<T> { return inner->tail(); }
-			auto isEmpty() -> bool { return inner->_head.isEmpty(); }
-			auto size() -> int { return (isEmpty() ? 0 : 1 + tail().size()); }
+			auto head() const -> Option<T> { return inner->head(); }
+			auto tail() const -> List<T> { return inner->tail(); }
+			auto isEmpty() const -> bool { return inner->_head.isEmpty(); }
+			auto size() const -> int { return (isEmpty() ? 0 : 1 + tail().size()); }
 
 			static List empty() { return List(new ListImpl<T>()); }
+
+			template<typename U>
+				auto foldLeft(U u, function<U(U, T)> fn) const -> U {
+					return head().fold(function<U()>([=]{ return u; }),
+							function<U(T)>([=](T t){ return tail().foldLeft(fn(u, t), fn); })
+							);
+				}
+
+			template<typename U>
+				auto foldRight(U u, function<U(T, U)> fn) const -> U {
+					return head().fold(function<U()>([=]{ return u; }),
+							function<U(T)>([=](T t){ return fn(t, tail().foldRight(u, fn)); })
+							);
+				}
+
+			bool operator ==(List<T> other) {
+				return ((head() == other.head()) && (isEmpty() || (tail() == other.tail())));
+			}
 			
 		public:
 			List() : inner(new ListImpl<T>()) {}
@@ -56,6 +74,14 @@ namespace brando {
 	template<typename T>
 			auto operator <<(T head, List<T> tail) -> List<T> { 
 				return List<T>(head, tail);
+			}
+
+		template <typename T>
+			ostream& operator << ( ostream& os, List<T> const& value ) {
+				os << "List(";
+				value.foldLeft(true, function<bool(bool, T)>([&](bool ignore, T t){ os << t << ","; (void)ignore; return true; }));
+				os << ")";
+				return os;
 			}
 
 	template<typename T>
