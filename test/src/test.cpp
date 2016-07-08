@@ -6,6 +6,7 @@
 #include "concurrent/executor.h"
 #include "concurrent/time.h"
 #include "functional/monoid.h"
+#include "functional/traverse.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -25,6 +26,7 @@ using brando::concurrent::Promise;
 using brando::concurrent::seconds;
 using brando::concurrent::Task;
 using brando::concurrent::ThreadPoolExecutor;
+using brando::functional::sequenceFutures;
 
 TEST_CASE( "Option functions", "[option]" ) {
   REQUIRE( some(1).getOrElse(0) == 1 );
@@ -41,6 +43,7 @@ TEST_CASE( "Lists", "[lists]" ) {
 	REQUIRE( (1 << (2 << nil<int>())).tail().head() == some(2) );
 	REQUIRE( (1 << nil<int>()).tail().tail().head().isEmpty() == true );
 	REQUIRE( (1 << nil<int>()).size() == 1 );
+	REQUIRE( (1 << (2 << nil<int>())).foldLeft(0, function<int(int, int)>([](int a, int b){ return a + b; })) == 3 );
 }
 
 TEST_CASE( "Futures", "[futures]" ) {
@@ -51,6 +54,10 @@ TEST_CASE( "Futures", "[futures]" ) {
 	auto inc = function<int(int)>([](int i){ return i + 1; });
 	REQUIRE( future(1).map(inc).await(0, seconds) == some(2) );
 	REQUIRE( future(1).map(inc).map(inc).map(inc).await(0, seconds) == some(4) );
+}
+
+TEST_CASE( "Sequence", "[sequence]" ) {
+	REQUIRE( sequenceFutures(future(1) << (future(2) << (future(3) << nil<Future<int>>()))).await(0, seconds) == some(1 << (2 << (3 << nil<int>()))) );
 }
 
 ThreadPoolExecutor ex(4);
