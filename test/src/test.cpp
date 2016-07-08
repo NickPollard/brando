@@ -25,8 +25,10 @@ using brando::concurrent::Future;
 using brando::concurrent::Promise;
 using brando::concurrent::seconds;
 using brando::concurrent::Task;
+using brando::concurrent::task;
 using brando::concurrent::ThreadPoolExecutor;
 using brando::functional::sequenceFutures;
+using std::this_thread::sleep_for;
 
 TEST_CASE( "Option functions", "[option]" ) {
   REQUIRE( some(1).getOrElse(0) == 1 );
@@ -65,14 +67,22 @@ TEST_CASE( "Tasks", "[tasks]" ) {
 	auto printInt = function<void(int)>([](int i){ printf("Result is %d.\n", i); });
 	auto inc = function<int(int)>([](int i){ return i + 1; });
 	REQUIRE( Task<int>([]{ return 42; }).run() == 42 );
+	REQUIRE( defer( return 42 ).run() == 42 );
+	REQUIRE( defer( return 2.5 + 2.5 ).run() == 5.0 );
+	REQUIRE( defer( return strlen("Hello") ).run() == 5 );
+	REQUIRE( strlen( defer( return "Hello" ).run()) == 5 );
 	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).await(1, seconds) == some(42) );
 	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).map(inc).await(1, seconds) == some(43) );
 
-	Task<int>([]{ std::this_thread::sleep_for(std::chrono::seconds(1)); return 1; }).runAsync(ex).foreach(printInt);
+	Task<int>([]{ sleep_for(std::chrono::seconds(1)); return 1; }).runAsync(ex).foreach(printInt);
 	Task<int>([]{ return 2; }).runAsync(ex).foreach(printInt);
-	Task<int>([]{  std::this_thread::sleep_for(std::chrono::seconds(2)); return 3; }).runAsync(ex).foreach(printInt);
+	Task<int>([]{  sleep_for(std::chrono::seconds(2)); return 3; }).runAsync(ex).foreach(printInt);
+
+	async( ex, {sleep_for(std::chrono::seconds(1)); return 5;} ).foreach(printInt);
+
 	Task<int>([]{ return 4; }).runAsync(ex).foreach(printInt);
-	std::this_thread::sleep_for(std::chrono::seconds(3));
+
+	sleep_for(std::chrono::seconds(3));
 }
 
 TEST_CASE( "Monoid", "[monoids]" ) {
