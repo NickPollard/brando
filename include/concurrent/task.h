@@ -44,6 +44,15 @@ namespace brando {
 				private:
 					function<T()> f;
 			};
+
+		template <typename F>
+  		auto task(F f) -> Task<decltype(f())> {
+				return Task<decltype(f())>(f);
+			};
+
+		#define defer( body ) (task([=]{ body; }))
+		#define async( ex, body ) (task([=]{ body; }).runAsync(ex))
+
 	};
 }
 
