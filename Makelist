@@ -1,4 +1,1 @@
-SRCS =	src/future.cpp \
-				src/main.cpp \
-				src/range.cpp \
-				src/task.cpp
+SRCS =	
