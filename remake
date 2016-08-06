@@ -3,7 +3,7 @@ while /bin/true
 do
 #echo "\nReady >>\n"
 echo "\n\x1b[33mReady >>\x1b[0m\n"
-inotifywait -rqq -e close_write src include test
+inotifywait -rqq -e close_write include test
 echo "\n\x1b[33mCompiling...\x1b[0m\n"
 make test 2>&1 \
 	| sed -e 's/[a-zA-Z_\/\.]*\.\(c\|cpp\|h\|o\|moon\|lua\)/\x1b[32m&\x1b[0m/' \

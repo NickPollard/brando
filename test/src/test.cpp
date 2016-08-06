@@ -19,6 +19,7 @@
 using brando::immutable::some;
 using brando::immutable::none;
 using brando::immutable::List;
+using brando::immutable::list;
 using brando::immutable::nil;
 using brando::concurrent::future;
 using brando::concurrent::Future;
@@ -36,6 +37,8 @@ TEST_CASE( "Option functions", "[option]" ) {
 }
 
 TEST_CASE( "Lists", "[lists]" ) {
+	REQUIRE( list(1,2,3).size() == 3);
+	REQUIRE( list(1,2,3).head() == some(1));
 	REQUIRE( List<int>::empty().head().isEmpty() == true );
 	REQUIRE( nil<int>().head().isEmpty() == true );
 	REQUIRE( nil<int>().isEmpty() == true );
@@ -59,7 +62,7 @@ TEST_CASE( "Futures", "[futures]" ) {
 }
 
 TEST_CASE( "Sequence", "[sequence]" ) {
-	REQUIRE( sequenceFutures(future(1) << (future(2) << (future(3) << nil<Future<int>>()))).await(0, seconds) == some(1 << (2 << (3 << nil<int>()))) );
+	REQUIRE( sequenceFutures(list(future(1), future(2), future(3))).await(0, seconds) == some(list(1,2,3)) );
 }
 
 ThreadPoolExecutor ex(4);
@@ -67,10 +70,6 @@ TEST_CASE( "Tasks", "[tasks]" ) {
 	auto printInt = function<void(int)>([](int i){ printf("Result is %d.\n", i); });
 	auto inc = function<int(int)>([](int i){ return i + 1; });
 	REQUIRE( Task<int>([]{ return 42; }).run() == 42 );
-	REQUIRE( defer( return 42 ).run() == 42 );
-	REQUIRE( defer( return 2.5 + 2.5 ).run() == 5.0 );
-	REQUIRE( defer( return strlen("Hello") ).run() == 5 );
-	REQUIRE( strlen( defer( return "Hello" ).run()) == 5 );
 	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).await(1, seconds) == some(42) );
 	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).map(inc).await(1, seconds) == some(43) );
 
@@ -85,11 +84,18 @@ TEST_CASE( "Tasks", "[tasks]" ) {
 	sleep_for(std::chrono::seconds(3));
 }
 
+TEST_CASE( "defer", "[defer]" ) {
+	REQUIRE( defer( return 42 ).run() == 42 );
+	REQUIRE( defer( return 2.5 + 2.5 ).run() == 5.0 );
+	REQUIRE( defer( return strlen("Hello") ).run() == 5 );
+	REQUIRE( strlen( defer( return "Hello" ).run()) == 5 );
+}
+
 TEST_CASE( "Monoid", "[monoids]" ) {
 	REQUIRE( sum(nil<int>()) == 0 );
 	REQUIRE( sum(nil<double>()) == 0.0 );
-	REQUIRE( sum(1 << (2 << (3 << nil<int>()))) == 6 );
-	REQUIRE( sum(1.0 << (2.0 << (3.0 << nil<double>()))) == 6.0 );
+	REQUIRE( sum(list(1,2,3)) == 6 );
+	REQUIRE( sum(list(1.0,2.0,3.0)) == 6.0 );
 	REQUIRE( $(none<int>()) == 0 );
 	REQUIRE( $(some(1)) == 1 );
 }
