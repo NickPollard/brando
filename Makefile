@@ -7,6 +7,7 @@ STATIC = libbrando.a
 include Makelist
 OBJS = $(SRCS:src/%.cpp=bin/%.o)
 TARGET = target
+INSTALL = /usr/local
 
 TESTLIBS = -lpthread -lbrando
 TESTCFLAGS = -g -Wall -Wextra -Werror -std=c++14 -Iinclude -I$(TARGET)/static/include -Itest
@@ -41,3 +42,12 @@ build-test : package
 test : build-test
 	@echo "-- running tests --"
 	@test/bin/test
+
+install : test static
+	@echo "-- installing libs to /usr/local/lib --"
+	@mkdir -p $(INSTALL)/lib/brando
+	@cp $(TARGET)/static/lib/$(STATIC) $(INSTALL)/lib/brando/.
+	@echo "-- installing headers to /usr/local/include --"
+	@mkdir -p $(INSTALL)/include/brando
+	@cp -r include/* $(INSTALL)/include/brando/.
+
