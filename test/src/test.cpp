@@ -24,12 +24,16 @@ using brando::immutable::nil;
 using brando::concurrent::future;
 using brando::concurrent::Future;
 using brando::concurrent::Promise;
-using brando::concurrent::seconds;
+using brando::concurrent::Seconds;
 using brando::concurrent::Task;
 using brando::concurrent::task;
 using brando::concurrent::ThreadPoolExecutor;
 using brando::functional::sequenceFutures;
 using std::this_thread::sleep_for;
+
+Seconds seconds() { return Seconds(); };
+//Minutes minutes() { return Minutes(); };
+//Hours hours() { return Hours(); };
 
 TEST_CASE( "Option functions", "[option]" ) {
   REQUIRE( some(1).getOrElse(0) == 1 );
@@ -55,14 +59,14 @@ TEST_CASE( "Futures", "[futures]" ) {
 	REQUIRE( Promise<int>().future().completed() == false );
 	REQUIRE( Promise<int>().future().get().isEmpty() == true );
 	REQUIRE( future(42).get() == some(42) );
-	REQUIRE( future(1).await(0, seconds) == some(1) );
+	REQUIRE( future(1).await(0, seconds()) == some(1) );
 	auto inc = function<int(int)>([](int i){ return i + 1; });
-	REQUIRE( future(1).map(inc).await(0, seconds) == some(2) );
-	REQUIRE( future(1).map(inc).map(inc).map(inc).await(0, seconds) == some(4) );
+	REQUIRE( future(1).map(inc).await(0, seconds()) == some(2) );
+	REQUIRE( future(1).map(inc).map(inc).map(inc).await(0, seconds()) == some(4) );
 }
 
 TEST_CASE( "Sequence", "[sequence]" ) {
-	REQUIRE( sequenceFutures(list(future(1), future(2), future(3))).await(0, seconds) == some(list(1,2,3)) );
+	REQUIRE( sequenceFutures(list(future(1), future(2), future(3))).await(0, seconds()) == some(list(1,2,3)) );
 }
 
 ThreadPoolExecutor ex(4);
@@ -70,8 +74,8 @@ TEST_CASE( "Tasks", "[tasks]" ) {
 	auto printInt = function<void(int)>([](int i){ printf("Result is %d.\n", i); });
 	auto inc = function<int(int)>([](int i){ return i + 1; });
 	REQUIRE( Task<int>([]{ return 42; }).run() == 42 );
-	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).await(1, seconds) == some(42) );
-	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).map(inc).await(1, seconds) == some(43) );
+	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).await(1, seconds()) == some(42) );
+	REQUIRE( Task<int>([]{ return 42; }).runAsync(ex).map(inc).await(1, seconds()) == some(43) );
 
 	Task<int>([]{ sleep_for(std::chrono::seconds(1)); return 1; }).runAsync(ex).foreach(printInt);
 	Task<int>([]{ return 2; }).runAsync(ex).foreach(printInt);
