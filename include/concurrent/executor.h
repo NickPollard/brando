@@ -20,7 +20,7 @@ namespace brando {
 		struct Executor {
 			template<typename T>
 				auto execute(Task<T> t) -> Future<T> {
-					auto p = Promise<T>();
+					auto p = Promise<T>(*this);
 					auto job = t.map(function<Unit(T)>([=](T t){ p.complete(t); return unit(); }));
 					executeImpl(job);
 					return p.future();
@@ -56,5 +56,10 @@ namespace brando {
 					(void)thread;
 				}
 		};
+
+    void executeFn( Executor& ex, function<void()> f ) {
+      ex.executeImpl( defer( f(); return unit(); ));
+      //ex.executeImpl(Task<Unit>(f));
+    };
 	}
 }

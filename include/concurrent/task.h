@@ -19,7 +19,7 @@ namespace brando {
 		/*
 			 Task<T> - a computation that can be executed to produce a value of type T
 			 */
-		template<typename T> 
+		template<typename T>
 			class Task {
 				public:
 					auto run() -> T { return f(); };
@@ -33,11 +33,11 @@ namespace brando {
 						 Task probably needs to be a free Monad that is interpreted as Id or Future when run
 						 */
 					template<typename U>
-						auto map(function<U(T)> ff) -> Task<U> { 
+						auto map(function<U(T)> ff) -> Task<U> {
 							auto thisF = f;
-							return Task<U>([=] { 
+							return Task<U>([=] {
 								auto t = thisF();
-								return ff(t); 
+								return ff(t);
 								}); };
 
 					//auto bind(Fn<T,Task<U>>) -> Task<U>

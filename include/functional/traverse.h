@@ -6,6 +6,7 @@
 
 namespace brando {
 	namespace functional {
+    /*
 
 		using concurrent::future;
 		using concurrent::Future;
@@ -15,7 +16,7 @@ namespace brando {
 
 		template<typename T>
 			auto sequenceFutures(List<Future<T>> fs) -> Future<List<T>> {
-				auto initial = future(nil<T>());
+				auto initial = future(nil<T>()); // TODO - need to guarantee an executor from somewhere?
 				auto fn = function<Future<List<T>>(Future<T>, Future<List<T>>)>([=](Future<T> h, Future<List<T>> t){
 					auto p = Promise<List<T>>();
 					// when both t and h done, complete p
@@ -25,5 +26,6 @@ namespace brando {
 				return fs.foldRight(initial, fn);
 			};
 
+      */
 	}
 }

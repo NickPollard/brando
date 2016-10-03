@@ -32,9 +32,11 @@ using brando::concurrent::Seconds;
 
 namespace brando {
 	namespace concurrent {
-
+		// *** Forward Declaration
+		struct Executor;
 		template<typename T> struct Promise;
 		template<typename T> struct PromiseImpl;
+    void executeFn( Executor& ex, function<void()> f );
 
 		/*
 			 Future<T> - a type that will, at some point, contain a value of type T, but may
@@ -46,9 +48,10 @@ namespace brando {
 			 */
 		template<typename T> struct Future {
 			template<typename U> auto map( function<U(T)> f ) -> Future<U> {
-				Promise<U> next = Promise<U>();
-				foreach([=](T t){ next.complete(f(t)); });
-				return next.future();
+        return promise->map(f);
+				//Promise<U> next = Promise<U>();
+				//foreach([=](T t){ next.complete(f(t)); });
+				//return next.future();
 			};
 
 			/*
@@ -72,8 +75,8 @@ namespace brando {
 			auto await(int seconds, Seconds unit) -> Option<T> { (void)unit; std::this_thread::sleep_for(std::chrono::seconds(seconds)); return promise->get(); }; // TODO
 
 			// Future::now() - Create an already completed future
-			static Future<T> now(T t) {
-				auto p = Promise<T>();
+			static Future<T> now(T t, Executor& ex) {
+				auto p = Promise<T>(ex);
 				p.complete(t);
 				return p.future();
 			};
@@ -92,7 +95,7 @@ namespace brando {
 		};
 
 		template<typename T>
-			auto future(T t) -> Future<T> { return Future<T>::now(t); }
+			auto future(T t, Executor& ex) -> Future<T> { return Future<T>::now(t, ex); }
 
 		/*
 			 Promise<T> - passable (by value) handle to an underlying PromiseImpl, provides public Promise API
@@ -102,7 +105,7 @@ namespace brando {
 				auto future() const -> Future<T> { return Future<T>(promise); }
 				void complete(T t) const { promise->complete(t); }
 
-				Promise() : promise(make_shared<PromiseImpl<T>>()) {}
+				Promise(Executor& ex) : promise(make_shared<PromiseImpl<T>>(ex)) {}
 			private:
 				shared_ptr<PromiseImpl<T>> promise;
 		};
@@ -140,7 +143,7 @@ namespace brando {
 		template<typename T> struct PromiseImpl {
 			bool completed() { return atomicData.load()->completed(); } // Strongly-ordered atomic memory-load
 
-			// Try to complete the future with the given value, return whether successful
+			// Try to complete the promise with the given value, return whether successful
 			bool complete(T t) {
 				PromiseData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
 				// Keep attempting until we're successful or someone else completes it
@@ -152,7 +155,13 @@ namespace brando {
 						// TODO - for now run all the handlers on this thread?
 						auto l = attempt->handlers;
 						while (!l.isEmpty()) {
-							l.head().foreach([&](auto f){ f(t); });
+							//l.head().foreach([&](auto f){ async( executor, f(t) ); });
+							//l.head().foreach([&](auto f){ (void)f; /* TODO ( executor.execute(f(t)));*/ });
+							l.head().foreach([=](auto f){ 
+                auto job = function<void()>([=]{ f(t); }); // TODO this should be an `apply` function
+					      executeFn(executor, job);
+              });
+
 							l = l.tail();
 						}
 						return true;
@@ -166,7 +175,7 @@ namespace brando {
 
 			auto get() -> Option<T> { return atomicData.load()->get(); }
 
-			template<typename U> void foreach( function<U(T)> f ) { 
+			template<typename U> void foreach( function<U(T)> f ) {
 				PromiseData<T>* current = atomicData.load(); // Strongly-ordered atomic memory-load
 				//PromiseData<T>* attempt = nullptr;
 				while (!current->completed()) {
@@ -181,13 +190,27 @@ namespace brando {
 					current = atomicData.load(); // Strongly-ordered atomic memory-load
 				} 
 				// it was completed already, so just run
-				current->get().foreach(f);
+        // TODO - this should be on the executor
+				//current->get().foreach(f);
+				current->get().foreach([=](T t){ 
+            auto job = function<void()>([=]{ f(t); }); // TODO this should be an `apply` function
+					  executeFn(executor, job);
+          });
 			}
 
-			explicit PromiseImpl() : atomicData(new PromiseData<T>) {}
+			template<typename F> void foreach( F f ) { foreach(function<void(T)>(f)); };
+
+			template<typename U> auto map( function<U(T)> f ) -> Future<U> {
+				Promise<U> next = Promise<U>(executor);
+				foreach([=](T t){ next.complete(f(t)); });
+				return next.future();
+			};
+
+			explicit PromiseImpl(Executor& ex) : atomicData(new PromiseData<T>), executor(ex) {}
 
 			private:
 				atomic<PromiseData<T>*> atomicData; // TODO does this need to be some kind of shared_ptr?
+        Executor& executor;
 		};
 
 	}
