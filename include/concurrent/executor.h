@@ -1,5 +1,6 @@
 // executor.h
 #pragma once
+#include "unit.h"
 #include "concurrent/future.h"
 #include "concurrent/queue.h"
 #include "concurrent/task.h"
@@ -10,8 +11,6 @@
 namespace brando {
 	namespace concurrent {
 
-		struct Unit {};
-		Unit unit() { return Unit(); }
 		typedef Task<Unit> Job;
 
 		/*

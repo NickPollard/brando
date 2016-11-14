@@ -6,9 +6,5 @@ namespace brando {
 		struct Seconds {};
 		struct Minutes {};
 		struct Hours {};
-
-		Seconds seconds;
-		Minutes minutes;
-		Hours hours;
 	}
 }

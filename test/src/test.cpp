@@ -12,6 +12,9 @@
 #include <iostream>
 #include <thread>
 
+#define BRANDO_MAIN
+#include "brando.h"
+
 // Create a main() for the catch test library
 #define CATCH_CONFIG_MAIN
 #include "ext/catch.hpp"
@@ -28,7 +31,7 @@ using brando::concurrent::seconds;
 using brando::concurrent::Task;
 using brando::concurrent::task;
 using brando::concurrent::ThreadPoolExecutor;
-//using brando::functional::sequenceFutures;
+using brando::functional::sequenceFutures;
 using std::this_thread::sleep_for;
 
 TEST_CASE( "Option functions", "[option]" ) {
@@ -63,11 +66,10 @@ TEST_CASE( "Futures", "[futures]" ) {
 	REQUIRE( future(1, ex).map(inc).map(inc).map(inc).await(1, seconds) == some(4) );
 }
 
-/*
 TEST_CASE( "Sequence", "[sequence]" ) {
-	REQUIRE( sequenceFutures(list(future(1, ex), future(2, ex), future(3, ex))).await(0, seconds) == some(list(1,2,3)) );
+  auto l = list(future(1, ex), future(2, ex), future(3, ex));
+	REQUIRE( sequenceFutures(l, ex).await(1, seconds) == some(list(1,2,3)) );
 }
-*/
 
 TEST_CASE( "Tasks", "[tasks]" ) {
 	auto printInt = function<void(int)>([](int i){ printf("Result is %d.\n", i); });
