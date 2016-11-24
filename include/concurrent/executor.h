@@ -8,6 +8,8 @@
 
 #include <range.h>
 
+using std::thread;
+
 namespace brando {
 	namespace concurrent {
 
@@ -40,11 +42,10 @@ namespace brando {
 				}
 			private:
 				ConcurrentQueue<Job> jobs;
-				//list<thread> threads;
 
 				auto startThread() -> void {
 					auto js = &jobs;
-					auto thread = new std::thread([js](){
+					auto t = new thread([js](){
 						while (true) {
 							if (!js->isEmpty()) {
 								auto job = js->pop(); // Concurrently pop a single entry from the queue
@@ -52,13 +53,12 @@ namespace brando {
 							}
 						}
 					});
-					(void)thread;
+					(void)t;
 				}
 		};
 
-    void executeFn( Executor& ex, function<void()> f ) {
-      ex.executeImpl( defer( f(); return unit(); ));
-      //ex.executeImpl(Task<Unit>(f));
-    };
+    //void executeFn( Executor& ex, function<void()> f ) {
+      //ex.executeImpl( defer( f(); return unit(); ));
+    //};
 	}
 }

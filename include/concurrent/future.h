@@ -73,6 +73,8 @@ namespace brando {
 			auto get() -> Option<T> { return promise->get(); }
 
 			auto await(int seconds, Seconds unit) -> Option<T> { (void)unit; std::this_thread::sleep_for(std::chrono::seconds(seconds)); return promise->get(); }; // TODO
+			auto await(int millis, Milliseconds unit) -> Option<T> { (void)unit; std::this_thread::sleep_for(std::chrono::milliseconds(millis)); return promise->get(); }; // TODO
+
 
 			// Future::now() - Create an already completed future
 			static Future<T> now(T t, Executor& ex) {

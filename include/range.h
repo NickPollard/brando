@@ -13,5 +13,5 @@ namespace brando {
 			auto operator ()(F f) -> void { for (int i = iterations; i > 0; --i) f(); }
 	};
 
-	auto foreach(int n) -> ForeachBuilder { return ForeachBuilder(n); }
+	auto foreach(int n) -> ForeachBuilder;
 };
