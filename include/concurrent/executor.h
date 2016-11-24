@@ -29,12 +29,16 @@ namespace brando {
 			virtual auto executeImpl(Job job) -> void = 0;
 		};
 
+		/*
+			 ThreadPoolExecutor - an executor using a fixed size thread pool
+			 */
 		class ThreadPoolExecutor : public Executor {
 			public:
 				virtual auto executeImpl(Job job) -> void { jobs.push(job);(void)job;}
 				ThreadPoolExecutor(int threadCount) { 
 					// memory barrier - ensure that concurrent queue is initialized?
-					foreach(threadCount)([&](){ startThread(); }); 
+          std::atomic_thread_fence(std::memory_order_seq_cst); // Ensure that the Mutex is fully formed before other threads try to access it
+					foreach(threadCount)([&]{ startThread(); }); 
 				}
 				~ThreadPoolExecutor() {
 					// Don't kill the executor until all threads have finished
@@ -45,12 +49,14 @@ namespace brando {
 
 				auto startThread() -> void {
 					auto js = &jobs;
-					auto t = new thread([js](){
+					auto t = new thread([js]{
 						while (true) {
+            /*
 							if (!js->isEmpty()) {
 								auto job = js->pop(); // Concurrently pop a single entry from the queue
 								job.foreach(function<void(Job)>([](auto t){ t.run(); }));
 							}
+              */
 						}
 					});
 					(void)t;

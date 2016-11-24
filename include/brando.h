@@ -18,7 +18,9 @@ namespace brando {
 		Hours hours;
 
     void executeFn( Executor& ex, function<void()> f ) {
-      ex.executeImpl( defer( f(); return unit(); ));
+      //auto t = defer( f(); return unit(); );
+      auto t = task([=]{ f(); return unit(); });
+      ex.executeImpl( t );
     };
   }
 

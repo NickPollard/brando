@@ -1,7 +1,7 @@
 // Future.h
 
 /*
-	 A C++ Monadic future implemtation.
+	 A C++ Implementation of monadic Futures.
 
 	 A Future<T> represents a value of type T that will be ready at some point in the future,
 	 but may not be ready now.
