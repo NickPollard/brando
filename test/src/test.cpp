@@ -42,7 +42,7 @@ TEST_CASE( "Option functions", "[option]" ) {
 
 TEST_CASE( "Lists", "[lists]" ) {
 	REQUIRE( list(1,2,3).size() == 3);
-	REQUIRE( list(1,2,3).head() == some(1));
+	REQUIRE( list(1,2,3).head() == some(5)); // BREAKING
 	REQUIRE( List<int>::empty().head().isEmpty() == true );
 	REQUIRE( nil<int>().head().isEmpty() == true );
 	REQUIRE( nil<int>().isEmpty() == true );
