@@ -1,4 +1,4 @@
-C = g++
+#CXX = g++
 CFLAGS = -Wall -Wextra -Werror -std=c++14 -Iinclude
 LFLAGS =
 LIBS = -lpthread
@@ -18,10 +18,10 @@ all : shared static
 shared : $(OBJS)
 	@echo "-- linking shared library --"
 	@mkdir -p $(TARGET)/shared/lib
-	@$(C) $(LFLAGS) -o $(TARGET)/shared/lib/$(SHARED) $(OBJS) $(LIBS)
+	@$(CXX) $(LFLAGS) -o $(TARGET)/shared/lib/$(SHARED) $(OBJS) $(LIBS)
 
 bin/%.o : src/%.cpp
-	@$(C) -shared $(CFLAGS) -c -o $@ $<
+	@$(CXX) -shared $(CFLAGS) -c -o $@ $<
 
 static : $(OBJS)
 	@echo "-- building static library --"
@@ -36,8 +36,8 @@ package : static
 build-test : package
 	@echo "-- building test package --"
 	@mkdir -p test/bin
-	@$(C) -shared $(TESTCFLAGS) -c -o test/bin/test.o test/src/test.cpp
-	@$(C) $(TESTLFLAGS) -o test/bin/test test/bin/test.o $(TESTLIBS)
+	@$(CXX) -shared $(TESTCFLAGS) -c -o test/bin/test.o test/src/test.cpp
+	@$(CXX) $(TESTLFLAGS) -o test/bin/test test/bin/test.o $(TESTLIBS)
 
 test : build-test
 	@echo "-- running tests --"
